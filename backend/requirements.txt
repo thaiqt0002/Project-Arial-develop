@@ -1,0 +1,6 @@
+flask
+pymongo
+wheel
+Jinja2
+gunicorn
+requests

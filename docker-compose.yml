@@ -1,0 +1,93 @@
+version: "3.8"
+
+services:
+
+  #frontend:
+  #  build:
+  #    context: ./frontend
+  #    dockerfile: Dockerfile
+  #  ports:
+  #    - 3000:3000
+  #  container_name: frontend
+  #  environment:
+  #    - REACT_APP_BACKEND_URL=http://localhost:5000
+  #  restart: always
+  #  volumes:
+  #    - ./frontend:/var/www
+  #  networks:
+  #    - frontend_net
+  #  links:
+  #    - mongodb
+  #    - backend
+
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - 5000:5000
+    container_name: backend
+    environment:
+      - PORT=5000
+      - MONGO_HOST=mongodb
+      - MONGO_PORT=27017
+      - MONGO_SERVER=mongodb
+      - MONGO_INITDB_DATABASE=sampledb
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=admin
+    restart: always
+    volumes:
+      - ./backend:/var/www/backend
+    links:
+      - mongodb
+    networks:
+      - backend_net
+      - frontend_net
+
+  webserver:
+    container_name: webserver
+    restart: unless-stopped
+    build: ./nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+    networks:
+      - frontend_net
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    restart: unless-stopped 
+    ports:
+      - 27017:27017 
+    environment:
+      - MONGO_INITDB_DATABASE=sampledb
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=admin
+      - MONGODB_DATA_DIR=/data/db
+      - MONDODB_LOG_DIR=/dev/null
+    volumes:
+      - ./mongo-entrypoint/setup-database.js:/docker-entrypoint-initdb.d/setup-database.js:ro
+      - mongodb:/data/db
+      - mongoconfig:/data/configdb
+    networks:
+      - frontend_net
+      - backend_net
+
+volumes:
+  nginxdata:
+    driver: local
+  mongodb:
+    driver: local
+  mongoconfig:
+    driver: local
+
+networks:
+  backend_net:
+    name: backend_net
+    driver: bridge
+  frontend_net:
+    name: frontend_net
+    driver: bridge
